@@ -1,2 +1,2 @@
-# Socket_practice
-Some socket practice
+# python3_practice
+Some python3 practice
