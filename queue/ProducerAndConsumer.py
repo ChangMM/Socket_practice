@@ -9,9 +9,6 @@ from colorama import Fore, Style
 queue = Queue(3)
 tasks = deque([1, 2, 3, 4, 5, 6, 7, 8])
 
-# 消费者总线程数
-ConsumerThreadNum = 0
-
 
 #生产者线程
 class ProducerThread(Thread):
@@ -28,11 +25,6 @@ class ProducerThread(Thread):
                 print(Fore.YELLOW, self.getName(), "生产者正在生产", item, "队列元素数:", queue.qsize(), Style.RESET_ALL)
             # 如果原材料被生产完，生产线程跳出循环
             except IndexError:
-                global ConsumerThreadNum
-                for i in range(3):
-                    if ConsumerThreadNum > 3:
-                        break
-                    ConsumerThreadNum += 1
                 print(Fore.RED, self.getName(), "原材料已被生产完毕", Style.RESET_ALL)
                 break
 
@@ -54,9 +46,9 @@ class ConsumerThread(Thread):
 # 入口方法，主线程
 def main():
     for i in range(2):
-        # 把两个生产线程列为守护线程，否则主线程结束之后不会销毁该线程，程序不会停止，影响实验结果
+        # 把两个生产线程列为用户线程，确保生产者生产完所有项目
         producer = ProducerThread()
-        producer.setDaemon(False)  # 这个需要设置为用户进程，不然生产者生产速度过慢
+        producer.setDaemon(False)
         # 启动线程
         producer.start()
 
