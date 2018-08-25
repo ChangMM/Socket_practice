@@ -15,66 +15,75 @@ hosts = [
 in_queue = Queue()
 out_queue = Queue()
 
+# q.task_done()，每次从queue中get一个数据之后，当处理好相关问题，最后调用该方法，以提示q.join()是否停止阻塞，让线程向前执行或者退出；
+# q.join()，阻塞，直到queue中的数据均被删除或者处理。为队列中的每一项都调用一次。
+
 
 class ThreadUrl(threading.Thread):
-	def __init__(self, in_q, out_q):
+	
+	def __init__(self):
 		threading.Thread.__init__(self)
-		self.queue = in_q
-		self.out_queue = out_q
 	
 	def run(self):
 		while True:
 			# grabs host from queue
-			host = self.queue.get()
+			host = in_queue.get()
+			print(self.getName(), "start")
 			
 			# grabs urls of hosts and then grabs chunk of web page
 			url = urllib.request.urlopen(host)
 			chunk = url.read()
 			
 			# place chunk into out queue
-			self.out_queue.put(chunk)
-			
+			out_queue.put(chunk)
+			print(self.getName(), "end")
 			# signals to queue job is done
-			self.queue.task_done()
+			in_queue.task_done()
 
 
-class DatamineThread(threading.Thread):
-	def __init__(self, out_q):
+class ThreadData(threading.Thread):
+	def __init__(self):
 		threading.Thread.__init__(self)
-		self.out_queue = out_q
 	
 	def run(self):
 		while True:
 			# grabs host from queue
-			chunk = self.out_queue.get()
+			chunk = out_queue.get()
+			print(self.getName(), "start")
 			
 			# parse the chunk
 			soup = BeautifulSoup(chunk, features="html.parser")
 			print(soup.findAll('title'))
+			print(self.getName(), "end")
 			# signals to queue job is done
-			self.out_queue.task_done()
+			out_queue.task_done()
 
 
 def main():
 	# spawn a pool of threads, and pass them queue instance
-	for i in range(5):
-		t = ThreadUrl(in_queue, out_queue)
+	for i in range(3):
+		t = ThreadUrl()
 		t.setDaemon(True)
 		t.start()
 	
 	# populate queue with data
 	for host in hosts:
 		in_queue.put(host)
+		print(host)
 	
-	for i in range(5):
-		dt = DatamineThread(out_queue)
+	for i in range(3):
+		dt = ThreadData()
 		dt.setDaemon(True)
 		dt.start()
 	
 	# wait on the queue until everything has been processed
-	# 这两个的顺序不能调换
+	# 这两个join()函数的运行顺序不能调换
+	# out_queue.join()
 	in_queue.join()
+	print("out_queue", out_queue.empty())
+	print("in queue end")
 	out_queue.join()
+	print("out queue end")
 
 
 start = time.time()
