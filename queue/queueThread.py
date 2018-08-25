@@ -78,7 +78,6 @@ def main():
 	
 	# wait on the queue until everything has been processed
 	# 这两个join()函数的运行顺序不能调换
-	# out_queue.join()
 	in_queue.join()
 	print("out_queue", out_queue.empty())
 	print("in queue end")
@@ -89,3 +88,11 @@ def main():
 start = time.time()
 main()
 print("Elapsed Time: ", time.time() - start)
+# out_queue.join() 在 in_queue.join() 前面的运行分析
+# 1、生产者-消费者模型，应该是对应于out_queue队列。ThreadUrl生产，ThreadData消费。总共生产5个，消费5个。 
+# 2、t1时刻，out_queue被取空，而queue 不一定为空——>out_queue.join()结束; 
+# 3、t2时刻，in_queue 为空，out_queue不一定为空———>in_queue.join()结束； 
+# 4、t3时刻，main print； 
+# 5、t4时刻，ThreadData继续操作out_queue； 
+# 6、t5时刻，main杀死子线程；
+# 7、t6时刻，main结束 setDaemon(true)使得主线程退出后杀死子线程。
