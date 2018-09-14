@@ -1,4 +1,5 @@
 from functools import wraps
+from inspect import signature
 import logging
 import time
 
@@ -35,6 +36,28 @@ def time_cal(func):
 		print("The result is: ", result, ", cost time: ", end - start)
 		return result
 	return wrapper
+
+
+# 检查参数类型的装饰器
+def type_assert(*type_args, **type_kargs):
+	def decoration(func):
+		if not __debug__:
+			return func
+		
+		sig = signature(func)
+		# 使用bind_partial()方法来对提供的类型到参数名做部分绑定
+		bound_types = sig.bind_partial(*type_args, **type_kargs)
+		
+		@wraps(func)
+		def wrapper(*args, **kargs):
+			bound_values = sig.bind(*args, **kargs)
+			for name, value in bound_values.arguments.items():
+				if name in bound_types:
+					if not isinstance(value, bound_types[name]):
+						raise TypeError('Argument {} must be {}'.format(name, bound_types[name]))
+			return func(*args, **kargs)
+		return wrapper
+	return decoration
 
 
 @logged(logging.DEBUG)
